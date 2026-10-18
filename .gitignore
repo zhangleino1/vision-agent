@@ -1,1 +1,10 @@
 视频输出/灵眸_AI实时守望_演示.mp4
+
+# 灵眸
+config.json
+提交材料/
+_work/
+视频输出/_parts/
+__pycache__/
+.venv/
+.DS_Store
