@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>灵眸 · AI 实时守望</title>
+<style>
+:root{
+  --bg:#f3f5fa; --panel:#ffffff; --panel2:#f8fafc; --line:#e4e8f0; --text:#1c2434; --dim:#6b7689;
+  --ok:#12a150; --info:#2f6bff; --warn:#e08a00; --danger:#e5384d; --accent:#4f5bff; --accent2:#7c4dff;
+  --shadow:0 1px 2px rgba(20,30,60,.04),0 8px 24px rgba(20,30,60,.06);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);background-image:radial-gradient(900px 420px at 0% -10%,#e5e9ff 0,transparent 60%),radial-gradient(800px 400px at 100% -10%,#e4f6f3 0,transparent 60%);background-attachment:fixed;
+  color:var(--text);font:14px/1.55 "Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 14px;transition:.15s;white-space:nowrap}
+button:hover{border-color:#c5cce0;background:var(--panel2)}
+button:active{transform:translateY(1px)}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(79,91,255,.28)}
+button.primary:hover{filter:brightness(1.07)}
+button.stop{background:var(--danger);border-color:transparent;color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(229,56,77,.28)}
+button.ghost{background:none;border-color:transparent;color:var(--dim);padding:4px 8px}
+button.ghost:hover{color:var(--text);background:#eef1f7}
+input,select,textarea{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;width:100%;outline:none;transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,91,255,.14)}
+input::placeholder,textarea::placeholder{color:#a3acbd}
+textarea{resize:vertical;min-height:64px}
+input[type=checkbox]{width:auto;accent-color:var(--accent)}
+input[type=range]{padding:0;border:0;box-shadow:none;accent-color:var(--accent)}
+
+header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.82);backdrop-filter:blur(12px)}
+header h1{font-size:17px;margin:0 10px 0 0;white-space:nowrap;letter-spacing:.3px}
+header h1 small{margin-left:8px;font-size:12px;font-weight:500;color:var(--dim);letter-spacing:1px}
+header .src{flex:1;min-width:220px;font-family:Consolas,"Cascadia Mono",monospace;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:99px;background:#fff;border:1px solid var(--line);color:var(--dim);white-space:nowrap;font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.pill i{flex:none;width:8px;height:8px;border-radius:50%;background:#c3cad8}
+.pill.live{color:#0b7a3c;background:#eefaf3;border-color:#c9eed8} .pill.live i{background:var(--ok);box-shadow:0 0 0 3px rgba(18,161,80,.18)}
+.pill.error{color:#b3202f;background:#fff1f2;border-color:#fbcfd4} .pill.error i{background:var(--danger)}
+.pill.connecting{color:#9a5b00;background:#fff8ea;border-color:#f6dfae} .pill.connecting i{background:var(--warn);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+
+#banner{margin:16px 20px 0;padding:14px 20px;border-radius:16px;font-size:18px;font-weight:650;display:flex;align-items:center;gap:14px;border:1px solid var(--line);background:var(--panel);color:var(--dim);box-shadow:var(--shadow)}
+#banner small{font-weight:400;font-size:13px;color:var(--dim)}
+#banner.ok{border-color:#c9eed8;background:linear-gradient(90deg,#eafaf1,#f6fdf9);color:#0b7a3c}
+#banner.warn{border-color:#f6dfae;background:linear-gradient(90deg,#fff3d6,#fffaf0);color:#9a5b00}
+#banner.danger{border-color:#f7a8b1;background:linear-gradient(90deg,#ffe1e5,#fff3f4);color:#c01f33;animation:pulse 1.1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(229,56,77,.16)}}
+
+main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,1fr);gap:16px;padding:16px 20px 28px;align-items:start}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.panel h2{font-size:14px;color:var(--text);font-weight:650;margin:2px 2px 12px;display:flex;align-items:center;gap:8px}
+.panel h2 .sp{flex:1}
+
+#stage{position:relative;background:#0e1320;border-radius:12px;overflow:hidden;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center}
+#stage img{width:100%;height:100%;object-fit:contain;display:block}
+#stage .empty{color:#aab3c5;text-align:center;padding:20px;font-size:15px}
+#stage .empty .hint{color:#7c869b}
+#chips{position:absolute;left:12px;top:12px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.chip{padding:3px 11px;border-radius:99px;font-size:13px;font-weight:600;background:rgba(14,19,32,.62);border:1px solid rgba(255,255,255,.18);color:#d5dbe8;backdrop-filter:blur(6px)}
+.chip.on{color:#fff;border-color:transparent;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.chip.on.none,.chip.on.info{background:var(--info)} .chip.on.warn{background:var(--warn)} .chip.on.danger{background:var(--danger)}
+#seen{display:flex;gap:8px;margin-top:12px;align-items:center}
+#seen:empty{display:none}
+#seen .f{flex:1;max-width:160px;position:relative}
+#seen img{width:100%;border-radius:8px;border:1px solid var(--line);display:block}
+#seen .f span{position:absolute;left:5px;bottom:5px;font-size:11px;color:#fff;background:rgba(14,19,32,.65);padding:0 6px;border-radius:5px}
+#seen .meta{color:var(--dim);font-size:12px;margin-left:auto;text-align:right;min-width:150px}
+.meter{height:6px;border-radius:3px;background:#e9edf4;overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+
+#events{max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.ev{display:flex;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);border-left:4px solid #c3cad8}
+.ev.info{border-left-color:var(--info)} .ev.warn{border-left-color:var(--warn);background:#fffaf0} .ev.danger{border-left-color:var(--danger);background:#fff4f5}
+.ev.clear{opacity:.6;background:var(--panel2)}
+.ev time{color:var(--dim);font-variant-numeric:tabular-nums;font-size:12px}
+.ev b{flex:1;font-weight:600}
+.ev img{height:40px;border-radius:6px;cursor:zoom-in;border:1px solid var(--line)}
+.none-yet{color:var(--dim);padding:18px;text-align:center}
+
+#cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;overflow:hidden;transition:.2s;--c:var(--info);--tint:#f1f5ff}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#d5dae6;transition:.2s}
+.card.warn{--c:var(--warn);--tint:#fff7e6} .card.danger{--c:var(--danger);--tint:#fff0f2}
+.card:hover{box-shadow:var(--shadow)}
+.card.on{border-color:var(--c);background:var(--tint);box-shadow:0 6px 20px color-mix(in srgb,var(--c) 18%,transparent)}
+.card.on::before{background:var(--c)}
+.card.off{opacity:.55}
+.card .h{display:flex;align-items:center;gap:6px}
+.card .h b{font-size:15px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:11px;color:var(--dim);background:#eef1f7;border-radius:5px;padding:1px 7px}
+.card .q{color:var(--dim);font-size:12px;margin:2px 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:37px}
+.big{font-size:32px;font-weight:700;line-height:1.1;display:flex;align-items:baseline;gap:8px;color:#9aa4b6}
+.card.on .big{color:var(--c)}
+.big small{font-size:13px;font-weight:500;color:var(--dim)}
+.bar{position:relative;height:10px;border-radius:5px;background:#e9edf4;margin:10px 0 4px}
+.bar i{display:block;height:100%;border-radius:5px;background:#b4bccb;transition:width .3s}
+.card.on .bar i{background:var(--c)}
+.bar em{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:#1c2434;opacity:.55}
+.opt{display:grid;grid-template-columns:minmax(60px,auto) 1fr 38px;gap:8px;align-items:center;font-size:13px;margin:4px 0;color:var(--dim)}
+.opt.sel{color:var(--text);font-weight:600}
+.opt .bar{margin:0;height:8px} .opt.sel .bar i{background:var(--c)}
+.opt .n{text-align:right;font-variant-numeric:tabular-nums}
+.spark{width:100%;height:34px;display:block;margin-top:8px}
+.foot{display:flex;justify-content:space-between;color:var(--dim);font-size:12px;margin-top:4px}
+
+#mask{position:fixed;inset:0;background:rgba(28,36,52,.28);backdrop-filter:blur(2px);z-index:9}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(470px,100vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(20,30,60,.12);z-index:10;display:flex;flex-direction:column}
+.drawer .dh{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);font-size:16px;font-weight:650}
+.drawer .dh span{flex:1}
+.drawer .db{flex:1;overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.drawer .df{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;background:var(--panel2)}
+.drawer .df .sp{flex:1}
+label.fld{display:flex;flex-direction:column;gap:5px;color:var(--dim);font-size:12px}
+label.fld>*:not(span){color:var(--text);font-size:14px}
+.row{display:flex;gap:10px} .row>*{flex:1}
+.seg{display:flex;background:#eef1f7;border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;color:var(--dim);border-radius:8px;padding:6px}
+.seg button.on{background:#fff;color:var(--accent);font-weight:600;box-shadow:0 1px 4px rgba(20,30,60,.12)}
+.optrow{display:grid;grid-template-columns:22px 110px 1fr auto 28px;gap:6px;align-items:center;margin-bottom:6px}
+.optrow.score{grid-template-columns:22px 1fr 28px}
+.optrow .idx{color:var(--dim);text-align:center}
+.optrow label{font-size:12px;color:var(--dim);white-space:nowrap;display:flex;gap:3px;align-items:center}
+.hint{color:var(--dim);font-size:12px}
+#testout{border:1px dashed #cdd4e2;border-radius:10px;padding:12px;min-height:46px;color:var(--dim);background:var(--panel2)}
+#testout b{color:var(--text);font-size:18px}
+#testout.hit{border-color:var(--warn);background:#fff7e6} #testout.hit b{color:var(--warn)}
+#presetMenu{display:flex;flex-wrap:wrap;gap:6px}
+#presetMenu button{border-radius:99px;padding:4px 12px;font-size:13px}
+#presetMenu button:hover{border-color:var(--accent);color:var(--accent)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c2434;color:#fff;padding:10px 18px;border-radius:10px;z-index:20;max-width:80vw;box-shadow:0 8px 30px rgba(20,30,60,.3)}
+::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-thumb{background:#d3d9e6;border-radius:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>👁️ 灵眸<small>AI 实时守望</small></h1>
+  <input class="src" id="source" placeholder="rtsp://用户名:密码@192.168.1.10:554/stream1　（也可填本地视频路径或摄像头编号 0）" spellcheck="false">
+  <button id="toggle" class="primary">▶ 开始</button>
+  <span class="pill" id="camPill"><i></i><span>未连接</span></span>
+  <span class="pill" id="aiPill"><i></i><span>模型空闲</span></span>
+  <button id="soundBtn" class="ghost" title="危险告警提示音">🔔</button>
+  <button id="settingsBtn">⚙ 场景与采样</button>
+</header>
+
+<div id="banner"><span>未开始监控</span></div>
+
+<main>
+  <section>
+    <div class="panel">
+      <div id="stage">
+        <div class="empty" id="stageEmpty">填写视频源后点击「开始」<br><span class="hint">模型会持续观察画面，并按右侧规则给出判断</span></div>
+        <img id="video" hidden alt="">
+        <div id="chips"></div>
+      </div>
+      <div id="seen"></div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <h2>事件记录</h2>
+      <div id="events"><div class="none-yet">暂无事件</div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>实时决策 <span class="sp"></span><button id="addBtn" class="primary">＋ 添加规则</button></h2>
+    <div id="cards"></div>
+  </section>
+</main>
+
+<div id="mask" hidden></div>
+
+<aside class="drawer" id="ruleDrawer" hidden>
+  <div class="dh"><span id="ruleTitle">编辑规则</span><button class="ghost" data-close>✕</button></div>
+  <div class="db">
+    <div id="presetBox">
+      <div class="hint" style="margin-bottom:6px">从模板开始：</div>
+      <div id="presetMenu"></div>
+    </div>
+    <label class="fld"><span>名称（显示在画面和卡片上）</span><input id="rName"></label>
+    <div>
+      <div class="hint" style="margin-bottom:4px">判断类型</div>
+      <div class="seg" id="rType">
+        <button data-t="noul">是 / 否</button><button data-t="choice">多选一</button><button data-t="score">等级评分</button>
+      </div>
+    </div>
+    <label class="fld"><span>提示词（向模型提出的问题）</span><textarea id="rInst" rows="3"></textarea></label>
+
+    <div id="noulBox">
+      <label class="fld"><span>判为「是」的标准</span><textarea id="rTrue" rows="2"></textarea></label>
+      <label class="fld" style="margin-top:10px"><span>判为「否」的标准</span><textarea id="rFalse" rows="2"></textarea></label>
+      <label class="fld" style="margin-top:10px"><span>触发阈值：「是」的概率 ≥ <b id="rThrVal"></b></span><input type="range" id="rThr" min="5" max="95" step="5"></label>
+    </div>
+    <div id="optBox">
+      <div class="hint" id="optHint" style="margin-bottom:6px"></div>
+      <div id="optRows"></div>
+      <button id="optAdd">＋ 添加一项</button>
+      <label class="fld" id="scoreThrBox" style="margin-top:10px"><span>触发条件：评分达到</span><select id="rScoreThr"></select></label>
+    </div>
+
+    <div class="row">
+      <label class="fld"><span>触发后</span>
+        <select id="rSev">
+          <option value="none">仅显示</option><option value="info">记录事件</option>
+          <option value="warn">警告（横幅）</option><option value="danger">危险（横幅 + 提示音）</option>
+        </select></label>
+      <label class="fld"><span>连续几次才生效（防抖）</span><input type="number" id="rHold" min="1" max="10"></label>
+    </div>
+
+    <div>
+      <button id="testBtn">🧪 用当前画面测试</button>
+      <div id="testout" style="margin-top:8px">开始监控后，可以在保存前先试一下提示词的效果。</div>
+    </div>
+  </div>
+  <div class="df"><button id="rDelete" class="ghost" style="color:var(--danger)">删除</button><span class="sp"></span><button data-close>取消</button><button id="rSave" class="primary">保存</button></div>
+</aside>
+
+<aside class="drawer" id="setDrawer" hidden>
+  <div class="dh"><span>场景与采样</span><button class="ghost" data-close>✕</button></div>
+  <div class="db">
+    <label class="fld"><span>场景描述（作为背景信息一并交给模型，对所有规则生效）</span><textarea id="sScene" rows="4"></textarea></label>
+    <div class="row">
+      <label class="fld"><span>每次送入帧数</span><input type="number" id="sFrames" min="1" max="6"></label>
+      <label class="fld"><span>覆盖时长（秒）</span><input type="number" id="sWindow" min="0.2" max="10" step="0.1"></label>
+    </div>
+    <div class="hint">判断「是否在运动」需要多帧对比：例如 3 帧 / 2 秒表示取 2 秒前、1 秒前和当前画面。帧数越多越准但越慢。</div>
+    <div class="row">
+      <label class="fld"><span>送入图片长边（像素）</span><input type="number" id="sSide" min="160" max="1280" step="32"></label>
+      <label class="fld"><span>两次判断最小间隔（秒）</span><input type="number" id="sInterval" min="0" step="0.5"></label>
+    </div>
+    <div class="row">
+      <label class="fld"><span>模型</span><input id="sModel"></label>
+      <label class="fld"><span>Ollama 地址</span><input id="sHost"></label>
+    </div>
+  </div>
+  <div class="df"><span class="sp"></span><button data-close>取消</button><button id="sSave" class="primary">保存</button></div>
+</aside>
+
+<div id="toast" hidden></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct = v => Math.round(v * 100) + '%';
+const TYPE_NAME = {noul: '是/否', choice: '多选一', score: '评分'};
+
+let cfg = null, st = null, presets = [], editing = null, isNew = false;
+let lastEventId = null, lastFseq = -1, sound = false, audioCtx = null;
+
+async function api(path, method = 'GET', body) {
+  const r = await fetch(path, {method, headers: body ? {'Content-Type': 'application/json'} : {}, body: body ? JSON.stringify(body) : undefined});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+}
+function setHTML(el, html) { if (el._html !== html) { el._html = html; el.innerHTML = html; } }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 4000); }
+async function saveCfg() { cfg = await api('/api/config', 'PUT', cfg); render(); }
+
+// ---------------------------------------------------------------- 渲染
+function dur(sec) { sec = Math.max(0, Math.round(sec)); return sec < 60 ? sec + ' 秒' : Math.floor(sec / 60) + ' 分 ' + (sec % 60) + ' 秒'; }
+
+function spark(history, thr) {
+  if (!history || history.length < 2) return '<svg class="spark"></svg>';
+  const W = 240, H = 34, n = history.length, step = W / Math.max(n - 1, 29);
+  const x0 = W - (n - 1) * step;
+  const pts = history.map((h, i) => (x0 + i * step).toFixed(1) + ',' + (H - 2 - h[0] * (H - 4)).toFixed(1)).join(' ');
+  const line = thr == null ? '' : `<line x1="0" x2="${W}" y1="${H - 2 - thr * (H - 4)}" y2="${H - 2 - thr * (H - 4)}" stroke="#1c2434" stroke-opacity=".3" stroke-dasharray="3 3"/>`;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${line}
+    <polygon points="${x0},${H} ${pts} ${W},${H}" fill="var(--c)" fill-opacity=".12"/>
+    <polyline points="${pts}" fill="none" stroke="var(--c)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function cardBody(rule, r) {
+  if (!r) return `<div class="big">—</div><div class="foot"><span>${rule.enabled ? '等待模型判断…' : '已停用'}</span></div>`;
+  let html = '', thr = null;
+  if (r.type === 'noul') {
+    thr = rule.threshold;
+    html = `<div class="big">${r.triggered ? '是' : '否'}<small>「是」的概率 ${pct(r.p)}</small></div>
+      <div class="bar"><i style="width:${pct(r.p)}"></i><em style="left:${pct(rule.threshold)}" title="阈值"></em></div>`;
+  } else if (r.type === 'choice') {
+    html = `<div class="big" style="font-size:22px">${esc(r.choice)}</div><div style="margin-top:8px">` +
+      Object.entries(r.probs).map(([k, v]) => {
+        const alert = rule.options.some(o => o.key === k && o.alert);
+        return `<div class="opt ${k === r.choice ? 'sel' : ''}"><span>${alert ? '⚠ ' : ''}${esc(k)}</span><div class="bar"><i style="width:${pct(v)}"></i></div><span class="n">${pct(v)}</span></div>`;
+      }).join('') + '</div>';
+  } else {
+    const top = Math.max(Object.keys(r.legend).length - 1, 1);
+    thr = rule.threshold / top;
+    html = `<div class="big" style="font-size:22px">${esc(r.legend[Math.round(r.score)] || '')}<small>${r.score.toFixed(1)} / ${top}</small></div>
+      <div class="bar"><i style="width:${pct(r.score / top)}"></i><em style="left:${pct(Math.min(thr, 1))}" title="阈值"></em></div>`;
+  }
+  const state = r.active ? `已持续 ${dur(st.now - r.since)}` : (r.triggered ? `命中 ${r.hits}/${rule.hold} 次，确认中` : '未触发');
+  return html + spark(r.history, thr) + `<div class="foot"><span>${state}</span><span>最近 ${r.history.length} 次</span></div>`;
+}
+
+function render() {
+  if (!cfg) return;
+  const running = st && st.running, results = (st && st.results) || {};
+  // 顶栏
+  const btn = $('toggle');
+  btn.textContent = running ? '■ 停止' : '▶ 开始';
+  btn.className = running ? 'stop' : 'primary';
+  const cam = st ? st.cam : {state: 'idle'};
+  const camText = {idle: '未连接', connecting: '连接中…', live: `${cam.width}×${cam.height} · ${cam.fps} fps`, error: cam.error || '连接失败'}[cam.state];
+  $('camPill').className = 'pill ' + cam.state;
+  $('camPill').lastElementChild.textContent = camText;
+  const an = st ? st.an : {};
+  $('aiPill').className = 'pill ' + (!running ? '' : an.error ? 'error' : an.count ? 'live' : 'connecting');
+  $('aiPill').lastElementChild.textContent = !running ? '模型空闲' : an.error ? '模型错误' : an.count ? `每次判断 ${an.latency}s · 已判断 ${an.count} 次` : (an.note || '首次判断中（加载模型可能较慢）…');
+  $('aiPill').title = an.error || '';
+
+  // 横幅
+  const active = cfg.rules.filter(r => r.enabled && results[r.id] && results[r.id].active);
+  const alarms = active.filter(r => r.severity === 'warn' || r.severity === 'danger');
+  const banner = $('banner');
+  if (!running) { banner.className = ''; banner.innerHTML = '<span>未开始监控</span>'; }
+  else if (an.error) { banner.className = 'warn'; banner.innerHTML = `<span>⚠ 模型调用失败</span><small>${esc(an.error)}</small>`; }
+  else if (alarms.length) {
+    const danger = alarms.some(r => r.severity === 'danger');
+    banner.className = danger ? 'danger' : 'warn';
+    banner.innerHTML = `<span>${danger ? '🚨' : '⚠'} ${alarms.map(r => esc(r.name)).join('、')}</span><small>已持续 ${dur(st.now - Math.min(...alarms.map(r => results[r.id].since)))}</small>`;
+  } else if (!an.count) { banner.className = ''; banner.innerHTML = '<span>正在等待第一次判断…</span>'; }
+  else { banner.className = 'ok'; banner.innerHTML = `<span>✓ 一切正常</span><small>${active.length ? '当前状态：' + active.map(r => esc(r.name)).join('、') : ''}</small>`; }
+
+  // 画面
+  const video = $('video');
+  if (running && video.hidden) { video.src = '/video.mjpg?' + Date.now(); video.hidden = false; $('stageEmpty').hidden = true; }
+  if (!running && !video.hidden) { video.removeAttribute('src'); video.hidden = true; $('stageEmpty').hidden = false; }
+  setHTML($('chips'), running ? cfg.rules.filter(r => r.enabled && results[r.id]).map(r => {
+    const x = results[r.id];
+    const text = x.type === 'noul' ? `${r.name} ${pct(x.p)}` : x.type === 'choice' ? `${r.name}：${x.choice}` : `${r.name}：${x.legend[Math.round(x.score)] || x.score.toFixed(1)}`;
+    return `<span class="chip ${r.severity} ${x.active ? 'on' : ''}">${esc(text)}</span>`;
+  }).join('') : '');
+
+  // 模型看到的帧
+  if (running && an.fseq !== lastFseq) {
+    lastFseq = an.fseq;
+    let html = '';
+    for (let i = 0; i < (an.frames || 0); i++) html += `<div class="f"><img src="/api/frame/${i}?s=${an.fseq}" alt=""><span>${i === an.frames - 1 ? '最新' : '第 ' + (i + 1) + ' 帧'}</span></div>`;
+    $('seen').innerHTML = html ? html + '<div class="meta"><div>↑ 模型本次看到的画面</div><div id="motionTxt"></div><div class="meter"><i id="motionBar"></i></div></div>' : '';
+  }
+  if (!running) { $('seen').innerHTML = ''; lastFseq = -1; }
+  if ($('motionBar')) { $('motionBar').style.width = pct(Math.min(1, cam.motion * 8)); $('motionTxt').textContent = `像素变化量 ${(cam.motion * 100).toFixed(1)}%`; }
+
+  // 决策卡片
+  setHTML($('cards'), cfg.rules.map(r => {
+    const x = r.enabled ? results[r.id] : null;
+    return `<div class="card ${r.severity} ${x && x.active ? 'on' : ''} ${r.enabled ? '' : 'off'}" data-id="${r.id}">
+      <div class="h"><b>${esc(r.name)}</b><span class="tag">${TYPE_NAME[r.type]}</span>
+        <button class="ghost" data-act="toggle" title="${r.enabled ? '停用' : '启用'}">${r.enabled ? '⏸' : '▶'}</button>
+        <button class="ghost" data-act="edit" title="编辑提示词">✎</button></div>
+      <div class="q" title="${esc(r.instructions)}">${esc(r.instructions)}</div>${cardBody(r, x)}</div>`;
+  }).join('') || '<div class="none-yet">还没有规则，点击右上角「添加规则」</div>');
+
+  // 事件
+  const evs = st ? st.events.slice().reverse() : [];
+  setHTML($('events'), evs.map(e => `<div class="ev ${e.severity} ${e.kind}">
+      <time>${new Date(e.ts * 1000).toLocaleTimeString('zh-CN', {hour12: false})}</time>
+      <b>${e.kind === 'trigger' ? '▲ ' + esc(e.name) : '▽ ' + esc(e.name) + ' 解除'}</b><span class="hint">${esc(e.text)}</span>
+      <img src="/api/snap/${e.id}" loading="lazy" alt="" data-snap></div>`).join('') || '<div class="none-yet">暂无事件</div>');
+  if (evs.length && evs[0].id !== lastEventId) {
+    if (lastEventId !== null && evs[0].kind === 'trigger' && evs[0].severity === 'danger') beep();
+    lastEventId = evs[0].id;
+  } else if (!evs.length) lastEventId = '';
+}
+
+function beep() {
+  if (!sound || !audioCtx) return;
+  [0, .25, .5].forEach(d => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.frequency.value = 880; g.gain.value = .15; o.connect(g).connect(audioCtx.destination);
+    o.start(audioCtx.currentTime + d); o.stop(audioCtx.currentTime + d + .15);
+  });
+}
+
+async function poll() {
+  try { st = await api('/api/state'); render(); } catch (e) { /* 服务重启时静默重试 */ }
+  setTimeout(poll, 500);
+}
+
+// ---------------------------------------------------------------- 规则编辑
+function openDrawer(el) { $('mask').hidden = false; el.hidden = false; }
+function closeDrawers() { $('mask').hidden = true; $('ruleDrawer').hidden = true; $('setDrawer').hidden = true; editing = null; }
+
+function fillRuleForm() {
+  const r = editing;
+  $('ruleTitle').textContent = isNew ? '添加规则' : '编辑规则';
+  $('presetBox').hidden = !isNew; $('rDelete').hidden = isNew;
+  $('rName').value = r.name; $('rInst').value = r.instructions;
+  $('rTrue').value = r.true_desc; $('rFalse').value = r.false_desc;
+  $('rSev').value = r.severity; $('rHold').value = r.hold;
+  [...$('rType').children].forEach(b => b.classList.toggle('on', b.dataset.t === r.type));
+  $('noulBox').hidden = r.type !== 'noul'; $('optBox').hidden = r.type === 'noul';
+  $('scoreThrBox').hidden = r.type !== 'score';
+  if (r.type === 'noul') { const t = Math.min(.95, Math.max(.05, r.threshold)); $('rThr').value = t * 100; $('rThrVal').textContent = pct(t); }
+  $('optHint').textContent = r.type === 'choice' ? '选项：模型会从中选出最符合的一项；勾选「告警」的选项被选中时触发。' : '等级：按从低到高的顺序描述每一级，模型给出最接近的等级。';
+  renderOpts();
+}
+function renderOpts() {
+  const r = editing; if (r.type === 'noul') return;
+  $('optRows').innerHTML = r.options.map((o, i) => r.type === 'choice'
+    ? `<div class="optrow" data-i="${i}"><span class="idx">${i + 1}</span><input data-f="key" placeholder="选项名" value="${esc(o.key)}"><input data-f="desc" placeholder="该选项的判定描述" value="${esc(o.desc)}"><label><input type="checkbox" data-f="alert" ${o.alert ? 'checked' : ''}>告警</label><button class="ghost" data-del>✕</button></div>`
+    : `<div class="optrow score" data-i="${i}"><span class="idx">${i}</span><input data-f="desc" placeholder="第 ${i} 级的描述" value="${esc(o.desc)}"><button class="ghost" data-del>✕</button></div>`).join('');
+  if (r.type === 'score') {
+    const cur = Math.min(r.options.length - 1, Math.max(1, Math.ceil(r.threshold)));
+    $('rScoreThr').innerHTML = r.options.map((o, i) => i ? `<option value="${i - .5}" ${i === cur ? 'selected' : ''}>第 ${i} 级「${esc(o.desc)}」或更高</option>` : '').join('');
+  }
+}
+function readRuleForm() {
+  const r = editing;
+  r.name = $('rName').value.trim() || '未命名规则'; r.instructions = $('rInst').value.trim();
+  r.true_desc = $('rTrue').value.trim(); r.false_desc = $('rFalse').value.trim();
+  r.severity = $('rSev').value; r.hold = Math.max(1, +$('rHold').value || 1);
+  if (r.type === 'noul') r.threshold = $('rThr').value / 100;
+  if (r.type === 'score') r.threshold = +$('rScoreThr').value || .5;
+  return r;
+}
+function editRule(rule, fresh) {
+  editing = JSON.parse(JSON.stringify(rule)); isNew = fresh;
+  $('testout').className = ''; $('testout').textContent = '开始监控后，可以在保存前先试一下提示词的效果。';
+  fillRuleForm(); openDrawer($('ruleDrawer'));
+}
+const blankRule = () => ({id: 'r' + Math.random().toString(16).slice(2, 10), name: '', enabled: true, type: 'noul', instructions: '', true_desc: '', false_desc: '', options: [], threshold: .6, hold: 1, severity: 'info'});
+
+$('addBtn').onclick = () => editRule(blankRule(), true);
+$('presetMenu').onclick = e => {
+  const i = e.target.dataset.i; if (i == null) return;
+  editing = {...JSON.parse(JSON.stringify(presets[i])), id: editing.id}; fillRuleForm();
+};
+$('rType').onclick = e => {
+  const t = e.target.dataset.t; if (!t || t === editing.type) return;
+  readRuleForm(); editing.type = t;
+  if (t !== 'noul' && editing.options.length < 2) editing.options = [{key: '', desc: '', alert: false}, {key: '', desc: '', alert: false}];
+  if (t === 'noul') editing.threshold = .6; if (t === 'score') editing.threshold = editing.options.length - 1.5;
+  fillRuleForm();
+};
+$('rThr').oninput = () => $('rThrVal').textContent = $('rThr').value + '%';
+$('optRows').oninput = e => {
+  const row = e.target.closest('.optrow'), f = e.target.dataset.f; if (!row || !f) return;
+  editing.options[row.dataset.i][f] = f === 'alert' ? e.target.checked : e.target.value;
+};
+$('optRows').onclick = e => {
+  if (!e.target.closest('[data-del]')) return;
+  if (editing.type === 'score') editing.threshold = +$('rScoreThr').value;
+  editing.options.splice(e.target.closest('.optrow').dataset.i, 1); renderOpts();
+};
+$('optAdd').onclick = () => { if (editing.type === 'score') editing.threshold = +$('rScoreThr').value || .5; editing.options.push({key: '', desc: '', alert: false}); renderOpts(); };
+
+$('rSave').onclick = async () => {
+  const r = readRuleForm(), before = JSON.stringify(cfg.rules);
+  const i = cfg.rules.findIndex(x => x.id === r.id);
+  if (i >= 0) cfg.rules[i] = r; else cfg.rules.push(r);
+  try { await saveCfg(); closeDrawers(); } catch (e) { cfg.rules = JSON.parse(before); toast(e.message); }
+};
+$('rDelete').onclick = async () => { cfg.rules = cfg.rules.filter(x => x.id !== editing.id); await saveCfg(); closeDrawers(); };
+$('testBtn').onclick = async () => {
+  const out = $('testout'); out.className = ''; out.textContent = '模型判断中…';
+  try {
+    const t = await api('/api/test', 'POST', {rule: readRuleForm()});
+    const r = t.result;
+    const head = r.type === 'noul' ? (r.triggered ? '是' : '否') + '　' + pct(r.p) : t.text;
+    out.className = r.triggered ? 'hit' : '';
+    out.innerHTML = `<b>${esc(head)}</b>　${r.triggered ? '→ 会触发' : '→ 不触发'}<div class="hint">用时 ${t.latency}s` +
+      (r.probs ? '　' + Object.entries(r.probs).map(([k, v]) => esc((r.legend ? r.legend[k] : k)) + ' ' + pct(v)).join(' · ') : '') + '</div>';
+  } catch (e) { out.textContent = '✗ ' + e.message; }
+};
+
+$('cards').onclick = async e => {
+  const act = e.target.dataset.act, card = e.target.closest('.card'); if (!act || !card) return;
+  const rule = cfg.rules.find(r => r.id === card.dataset.id);
+  if (act === 'edit') editRule(rule, false);
+  if (act === 'toggle') { rule.enabled = !rule.enabled; await saveCfg(); }
+};
+$('events').onclick = e => { if (e.target.dataset.snap !== undefined) window.open(e.target.src); };
+
+// ---------------------------------------------------------------- 设置 / 启停
+$('settingsBtn').onclick = () => {
+  $('sScene').value = cfg.scene; $('sFrames').value = cfg.frames; $('sWindow').value = cfg.window;
+  $('sSide').value = cfg.max_side; $('sInterval').value = cfg.interval; $('sModel').value = cfg.model; $('sHost').value = cfg.ollama_host;
+  openDrawer($('setDrawer'));
+};
+$('sSave').onclick = async () => {
+  Object.assign(cfg, {scene: $('sScene').value, frames: +$('sFrames').value, window: +$('sWindow').value, max_side: +$('sSide').value,
+    interval: +$('sInterval').value, model: $('sModel').value.trim(), ollama_host: $('sHost').value.trim()});
+  try { await saveCfg(); closeDrawers(); } catch (e) { toast(e.message); }
+};
+$('mask').onclick = closeDrawers;
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeDrawers);
+
+$('toggle').onclick = async () => {
+  try {
+    if (st && st.running) await api('/api/stop', 'POST');
+    else { cfg.source = $('source').value.trim(); await saveCfg(); await api('/api/start', 'POST'); }
+  } catch (e) { toast(e.message); }
+};
+$('soundBtn').onclick = () => {
+  sound = !sound; if (sound && !audioCtx) audioCtx = new AudioContext();
+  $('soundBtn').textContent = sound ? '🔔' : '🔕'; if (sound) beep();
+};
+
+(async () => {
+  [cfg, presets] = await Promise.all([api('/api/config'), api('/api/presets')]);
+  $('source').value = cfg.source;
+  $('soundBtn').textContent = '🔕';
+  $('presetMenu').innerHTML = presets.map((p, i) => `<button data-i="${i}">${esc(p.name)}</button>`).join('');
+  poll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+{
+  "source": "rtsp://192.168.2.157:8080/h264_ulaw.sdp",
+  "ollama_host": "http://localhost:11434",
+  "model": "clef-flash",
+  "scene": "这是一个固定安装的监控摄像头拍摄的画面。",
+  "frames": 3,
+  "window": 2.0,
+  "interval": 0.0,
+  "max_side": 448,
+  "rules": [
+    {
+      "id": "r020401ed",
+      "name": "人物在运动",
+      "enabled": true,
+      "type": "noul",
+      "instructions": "对比这几帧画面，画面中的人是否在明显运动（走动、挥手、身体位置或姿态发生变化）？",
+      "true_desc": "人物在各帧之间的位置或姿态有明显变化。",
+      "false_desc": "画面中没有人，或人物在各帧之间基本保持静止。",
+      "options": [],
+      "threshold": 0.6,
+      "hold": 1,
+      "severity": "info"
+    },
+    {
+      "id": "r3320c91f",
+      "name": "摔倒",
+      "enabled": true,
+      "type": "noul",
+      "instructions": "画面中是否有人摔倒、倒在地上或躺在地面上？",
+      "true_desc": "有人正在摔倒，或已经倒在/躺在地面上。",
+      "false_desc": "画面中没有人，或所有人都在正常站立、行走、坐着。",
+      "options": [],
+      "threshold": 0.6,
+      "hold": 2,
+      "severity": "danger"
+    },
+    {
+      "id": "r9b885f69",
+      "name": "人物姿态",
+      "enabled": true,
+      "type": "choice",
+      "instructions": "最新一帧画面中，人物的主要姿态是什么？",
+      "true_desc": "",
+      "false_desc": "",
+      "options": [
+        {
+          "key": "站立或行走",
+          "desc": "人物直立，站着或正在走动",
+          "alert": false
+        },
+        {
+          "key": "坐着",
+          "desc": "人物坐在椅子、沙发或床边",
+          "alert": false
+        },
+        {
+          "key": "躺在地上",
+          "desc": "人物倒在或躺在地面上",
+          "alert": true
+        },
+        {
+          "key": "无人",
+          "desc": "画面中没有人",
+          "alert": false
+        }
+      ],
+      "threshold": 0.6,
+      "hold": 2,
+      "severity": "warn"
+    },
+    {
+      "id": "r3002e406",
+      "name": "有人看书",
+      "enabled": true,
+      "type": "noul",
+      "instructions": "画面中是否能看到人看书或者IPAD？",
+      "true_desc": "人拿着书或者IPAD",
+      "false_desc": "没有拿书或者IPAD",
+      "options": [],
+      "threshold": 0.6,
+      "hold": 1,
+      "severity": "none"
+    },
+    {
+      "id": "r869f9229",
+      "name": "有人打电话",
+      "enabled": true,
+      "type": "noul",
+      "instructions": "画面中是否能看到人在打电话",
+      "true_desc": "人手拿着手机打电话",
+      "false_desc": "手上没有电话",
+      "options": [
+        {
+          "key": "",
+          "desc": "",
+          "alert": false
+        },
+        {
+          "key": "",
+          "desc": "",
+          "alert": false
+        }
+      ],
+      "threshold": 0.6,
+      "hold": 1,
+      "severity": "none"
+    }
+  ]
+}
